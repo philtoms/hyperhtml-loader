@@ -1,17 +1,17 @@
 {
-  "name": "hyperhtml-prefix",
+  "name": "hyperhtml-loader",
   "version": "0.0.1",
-  "description": "compile html templates to hyperHTML",
+  "description": "compile html templates to hyperHTML javaScript modules",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=7.0.0"
   },
   "author": "Phil Toms",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/philtoms/hyperhtml-prefix/issues"
+    "url": "https://github.com/philtoms/hyperhtml-loader/issues"
   },
-  "homepage": "https://github.com/philtoms/hyperhtml-prefix#readme",
+  "homepage": "https://github.com/philtoms/hyperhtml-loader#readme",
   "files": [
     "dist",
     "src"
@@ -19,7 +19,7 @@
   "scripts": {
     "lint": "eslint src test",
     "prebuild": "mkdir -p dist",
-    "build": "babel --source-maps-inline --out-dir dist src",
+    "build": "babel --source-maps inline --out-dir ./dist ./src",
     "pretest": "npm run lint",
     "test": "ava",
     "prepublish": "npm test && npm run build",
@@ -27,32 +27,28 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/philtoms/hyperhtml-prefix.git"
+    "url": "git://github.com/philtoms/hyperhtml-loader.git"
   },
   "keywords": [
-    "readtables",
     "hyperHTML",
-    "macros",
-    "javascript"
+    "javascript",
+    "loader",
+    "readtables",
+    "webpack"
   ],
   "devDependencies": {
     "ava": "github:avajs/ava",
     "babel-cli": "^6.22.2",
     "babel-eslint": "^7.1.1",
-    "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-preset-env": "^1.1.8",
     "babel-register": "^6.22.0",
     "eslint": "^3.14.0",
-    "eslint-plugin-flowtype": "^2.30.0",
-    "flow-bin": "^0.38.0",
     "readtable": "0.0.1"
   },
   "ava": {
     "babel": "inherit",
     "files": [
-      "test/test-char-stream.js",
-      "test/test-readtable.js",
-      "test/test-reader.js"
+      "test/index-test.js"
     ],
     "require": [
       "babel-register"

@@ -1,8 +1,5 @@
 {
   "parser": "babel-eslint",
-  "plugins": [
-    "flowtype"
-  ],
   "env": {
     "es6": true,
     "node": true
@@ -12,8 +9,7 @@
     "sourceType": "module"
   },
   "extends": [
-    "eslint:recommended",
-    "plugin:flowtype/recommended"
+    "eslint:recommended"
   ],
   "rules": {
     "semi": ["error", "always"],

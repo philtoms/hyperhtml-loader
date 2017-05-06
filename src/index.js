@@ -1,9 +1,6 @@
-import fs from 'fs';
 import { Reader, CharStream, isEOS, getCurrentReadtable, setCurrentReadtable } from 'readtable';
 
 const WHITE_SPACE = /(\s|\n)/;
-
-let source;
 
 const eatWhitespace = (stream) => {
   const out = [];
@@ -17,63 +14,67 @@ const eatWhitespace = (stream) => {
 };
 
 const readExpr = (stream) => {
+  const exprPos = stream.sourceInfo.position;
   const out =[];
   let nest = 1;
-  let char = stream.readString();
 
-  for (; !isEOS(char); char = stream.readString()) {
+  do {
+    let char = stream.readString();
+
+    if (isEOS(char)) {
+      throw new Error({pos: exprPos});
+    }
+
     out.push(char);
+
     if (char === '{') nest++;
     if (char === '}' && !(--nest)) break;
   }
-  return isEOS(char) ? char : out.join('');
+  while (true);
+
+  return out.join('');
 };
 
 const defaultAction = stream => stream.readString();
 
-const action = stream => {
+const action = type => stream => {
   const out = [stream.readString()];
   let [lookAhead, ws] = eatWhitespace(stream);
   const key = stream.peek(lookAhead) + stream.peek(lookAhead + 1);
 
   // bail early on false match
-  if (!['${', '@{', '&{'].includes(key)) {
+  if (!['${', '&{'].includes(key)) {
     return out.join('');
   }
 
-  // text expression - wrap with spaces or WS
-  if (key === '&{') out.push(ws.length ? ws : ' ');
+  const expr = type === 'attr' ? type : key === '&{' ? 'html' : 'text';
 
-  // attr expression - wrap with single quotes
-  if (key === '@{') out.push('\'');
+  switch (expr) {
+    case 'attr':
+      // attr expression - wrap with single quotes
+      out.push('"');
+      break;
+    case 'text':
+      // text expression - wrap with spaces or WS
+      out.push(ws.length ? ws : ' ');
+  }
 
   // standard prefix
   out.push('${');
   stream.readString(lookAhead + 2);
 
-  const exprPos = stream.sourceInfo.position;
-
-  let expr = readExpr(stream);
-  if (isEOS(expr)) {
-    const line = (source.substr(0, exprPos).match(/\n/g) || []).length + 1;
-    /* eslint no-console:0 */
-    console.log(`[] unexpected EOS at line ${line}`);
-    return expr;
-  }
-
-  out.push(expr);
+  out.push(readExpr(stream));
 
   // tidy up expression suffix
   [lookAhead, ws] = eatWhitespace(stream);
-  if (key === '&{') out.push(ws.length ? ws : ' ');
-  if (key === '@{') out.push('\'');
+  if (expr === 'text') out.push(ws.length ? ws : ' ');
+  if (expr === 'attr') out.push('"');
   stream.readString(lookAhead);
 
   return out.join('');
 };
 
-(() => {
-  const src = process.argv[2];
+export default source => {
   const currentTable = getCurrentReadtable();
   const entries = [{
     mode: 'non-terminating',
@@ -81,26 +82,29 @@ const action = stream => {
   },{
     key: '=',
     mode: 'non-terminating',
-    action: action
+    action: action('attr')
   },{
     key: '>',
     mode: 'non-terminating',
-    action: action
+    action: action('node')
   }];
 
   const newTable = currentTable.extend.apply(currentTable, entries);
-
-  source = fs.readFileSync(src, 'utf-8');
-
   const stream = new CharStream(source);
   const reader = new Reader();
 
   setCurrentReadtable(newTable);
 
   let out = [];
-  for (let block = reader.read(stream); true; block = reader.read(stream)) {
-    out = out.concat(block);
-    if (isEOS(stream.peek())) break;
+  try {
+    do {
+      out = out.concat(reader.read(stream));
+      if (isEOS(stream.peek())) {
+        return 'export default (render, props) => render`' + out.join('') + '`';
+      }
+    } while(true);
+  } catch (err) {
+    const line = (source.substr(0, err.pos).match(/\n/g) || []).length + 1;
+    throw new Error(`[hyperhtml-loader] unexpected EOS at line ${line}`);
   }
-  fs.writeFileSync(`${src}.html`, out.join(''));
-})();
+};

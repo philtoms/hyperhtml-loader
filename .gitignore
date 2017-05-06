@@ -1,5 +1,4 @@
 node_modules
 .editorconfig
-dist/
 .DS_store
 .vscode

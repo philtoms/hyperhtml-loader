@@ -1,0 +1,6 @@
+<div attr=${props.attr}>
+  <p>${props.text}</p>
+  <div>
+    &{props.html}
+  </div>
+</div>
